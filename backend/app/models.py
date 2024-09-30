@@ -161,3 +161,16 @@ class BlacklistToken(db.Model):
 	
 	def __repr__(self): # # String representation
 		return f'<BlacklistToken {self.token}>'
+
+
+
+# ======================
+# Recipe plan Entity
+# ======================
+class RecipePlan(db.Model):
+	__tablename__ = 'recipe_plans'
+	id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+	user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+	recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False)
+	data = db.Column(db.DateTime(timezone=True), default=func.now())
+	
