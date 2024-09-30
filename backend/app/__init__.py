@@ -17,6 +17,9 @@ def create_app():
 	
 	# # Load configuration from the config file
 	app.config.from_object(DevelopmentConfig())
+
+	# # Set up logging
+	DevelopmentConfig.log_config()
 	
 	# # Initialize extensions
 	db.init_app(app)

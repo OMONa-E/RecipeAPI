@@ -1,3 +1,4 @@
+from flask import current_app
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from .auth_resources import role_required
@@ -41,8 +42,12 @@ class RecipeCreate(Resource): # # Create a recipe
 		instructions = serializeJsonToString(data['instructions']) # # Serialize the JSON		
 		user_id = get_jwt_identity() # # Get client JWT Id
 
+		# # Log data creation event
+		current_app.logger.info(f'User {user_id} attempting to create recipe: {data['name']}')
+
 		# # Validate none null client data
 		if not name or not ingredients or not instructions:
+			current_app.logger.info(f'User {user_id} failed to provide required fields fro recipe creation')
 			raise AppException(f'Name, ingredients and instructions fields cannot be blank', 400)
 
 		# # Instantiate a new recipe object
@@ -55,8 +60,11 @@ class RecipeCreate(Resource): # # Create a recipe
 			created_by=user_id
 		)		
 		recipe.calculate_total_cost(ingredients=ingredients) # # Sets the total cost for ingredients
+		current_app.logger.info(f'Total cost for recipe {name} calculated sucdessfully.')
+
 		db.session.add(recipe) # # Add new object to database session
 		db.session.commit() # # Save and flush the transaction
+		current_app.logger.info(f'Recipe {name} created successfully by user {user_id}')
 		return {'message': 'Recipe created sucessfully', "recipe": recipe.to_dict()}, 201
 
 
@@ -67,7 +75,10 @@ class RecipeUpdateById(Resource): # # Upadate a recipe by Id
 		recipe = Recipe.query.get_or_404(recipe_id) # # Retrieve recipe by Id
 		user_id = get_jwt_identity() # # Gets current user JSONWEB Token
 		
+		current_app.logger.info(f'User {user_id} attempting to update recipe {recipe.name}')
+
 		if recipe.created_by != user_id: # # Validate against the recipe created_by field
+			current_app.logger.info(f'User {user_id} did not create the recipe {recipe.name}')
 			raise AppException('You do not have permission to update this recipe', 403)
 
 		parser = recipe_parser() # # Parses the client provided data
@@ -87,6 +98,7 @@ class RecipeUpdateById(Resource): # # Upadate a recipe by Id
 		# 	recipe.amount_to_serve = data['amount_to_serve']
 
 		db.session.commit() # # Save and flush the changes
+		current_app.logger.info(f'User {user-id} updated recipe {recipe.name} successfully')
 		return {'message': 'Recipe updated sucessfully', "recipe": recipe.to_dict()}, 200
 
 
@@ -97,11 +109,15 @@ class RecipeDeleteById(Resource): # # Delete a recipe by Id
 		recipe = Recipe.query.get_or_404(recipe_id) # # Retrieve a recipe by Id or throws an exception otherwise
 		user_id = get_jwt_identity() # # Gets tee current user JWTWEB Token
 
+		current_app.logger.info(f'User {user_id} attempting to delete recipe {recipe.name}')
+
 		if recipe.created_by != user_id: # # Validate client against created_by field
+			current_app.logger.info(f'User {user_id} did not create the recipe {recipe.name}')
 			raise AppException('You do not have permission to delete this recipe.', 403)
 
 		db.session.delete(recipe) # # Delete a recipe and associated pins
 		db.session.commit() # # Save and flush the changes
+		current_app.logger.info(f'User {user_id} deleted recipe {recipe.name} successfully')
 		return {'message': 'Recipe deleted sucessfully'}, 200
 
 
@@ -111,13 +127,19 @@ class RecipeDeleteById(Resource): # # Delete a recipe by Id
 class PinCreate(Resource): # # Create a pin
 	@jwt_required() # # Requires logged in user
 	def post(self, recipe_id):
+		recipe = Recipe.query.get_or_404(recipe_id) # # Retrieve a recipe by Id - provide by the client otherwise throws 404 exception 
+		user_id = get_jwt_identity() # # Gets the current user JWTWEB Token
+
+		current_app.logger.info(f'User {user} attempting to pin recipe {recipe.name}')
+
 		parser = reqparse.RequestParser() # # Intialize the parser
 		parser.add_argument('content', required=True, help='Content cannot be blank') # # Register/add argument to be parse
 		data = parser.parse_args() # # Parse the client data
-		user_id = get_jwt_identity() # # Gets the current user JWTWEB Token
 
-		recipe = Recipe.query.get_or_404(recipe_id) # # Retrieve a recipe by Id - provide by the client otherwise throws 404 exception 
-		
+		if not data['content']:
+			current_app.logger.info(f'User {user_id} did not provide content field')
+			raise AppException('Content field cannot be null', 403)
+
 		pin = Pin( # # Instantiate a pin object and its associated attributes
 			recipe_id=recipe_id,
 			user_id=user_id,
@@ -125,6 +147,7 @@ class PinCreate(Resource): # # Create a pin
 		)
 		db.session.add(pin) # # Add the pin to the database session
 		db.session.commit() # # Save and flush the changes
+		current_app.logger(f'User {user_id} created pin for recipe {recipe.name} successfully')
 		return {'message': 'Pin/Comment added successfully', 'pin': pin.to_dict()}, 201
 
 

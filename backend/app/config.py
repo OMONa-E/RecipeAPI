@@ -1,5 +1,6 @@
 import os, logging
 from dotenv import load_dotenv
+from logging.handlers import RotatingFileHandler
 
 
 # =====================================
@@ -59,6 +60,20 @@ class Config:
                 format="{asctime} - {levelname} - {message}",
                 style="{",
                 datefmt="%Y-%m-%d %H:%M", )
+
+        # # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(
+                logging.Formatter(
+                        "{asctime} - {levelname} - {message}",
+                        style="{",
+                        datefmt="%Y-%m-%d %H:%M"
+                )
+        )
+
+        # # Add handlers to app's logger
+        logging.getLogger().addHandler(console_handler)
         
         
 # ================================
