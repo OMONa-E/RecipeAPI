@@ -1,6 +1,6 @@
 from flask import Blueprint
 from flask_restful import Api
-from .app_resources import RecipeCreate, RecipeGetAll, RecipeDeleteById,RecipeUpdateById, RecipeGetById, PinCreate, PinGetByRecipeId
+from .app_resources import GetRecipePlan, RecipeCreate, RecipeGetAll, RecipeDeleteById,RecipeUpdateById, RecipeGetById, PinCreate, PinGetByRecipeId
 from .auth_resources import Signup, Login, Logout, UpdateUserProfile, DeleteUser, DeleteUserById
 
 
@@ -32,3 +32,6 @@ api.add_resource(RecipeUpdateById, '/recipes/<int:recipe_id>') # # UPDATE Reciep
 # # Pin
 api.add_resource(PinCreate, '/recipes/<int:recipe_id>/pin') # # POST pin/comment on a recipe identified by Id
 api.add_resource(PinGetByRecipeId, '/recipes/<int:recipe_id>/pin') # # GET all pins/comments attached to a recipe
+
+# # Recipe plan
+api.add_resource(GetRecipePlan, '/daily_recommendations') # # GET 3 or less recipes for the day 

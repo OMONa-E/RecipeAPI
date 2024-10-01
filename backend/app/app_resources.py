@@ -1,8 +1,10 @@
+import random
+from datetime import datetime, timedelta
 from flask import current_app
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from .auth_resources import role_required
-from .models import Recipe, Pin
+from .models import Recipe, Pin, RecipePlan
 from .utils import recipe_parser, serializeJsonToString
 from .exceptions import AppException
 from .extensions import db
@@ -157,4 +159,56 @@ class PinGetByRecipeId(Resource): # # Retrieve all pin/comment by id for a recip
 	def get(self, recipe_id):
 		pins = Pin.query.filter_by(recipe_id=recipe_id).all() # # Retrieve all pins in the database associated with the recipe identified by its Id
 		return [pin.to_dict() for pin in pins]
-	 
+
+
+
+# ========================== #
+# Recipe Plan Resource class #
+class GetRecipePlan(Resource):
+	@jwt_required() # # Loggin previllege
+	def get(self):
+		user_id = get_jwt_identity()
+
+		current_app.logger.info(f'User {user_id} attempting to retrieve recipe plan')
+
+		# # Retrieve recipes user has had in the last 10days
+		ten_days_ago = datetime.utcnow() - timedelta(days=10)
+		recent_recipe_plans = RecipePlan.query.filter(
+			RecipePlan.user_id == user_id,
+			RecipePlan.date >= ten_days_ago
+		).all()
+
+		current_app.logger.info(f'User {user_id} sucessfully got 10 daily recipe plan')
+
+		if not recent_recipe_plans: # # Validate recipe plan
+			current_app.logger.info('User {user_id} had no recipe plan before')
+		else:
+			current_app.logger.info('User {user_id} already has recipe plan within the last 10 days')
+
+		# # List of recipe ids from recipe plan
+		recent_recipe_ids = [plan.recipe_id for plan in recent_recipe_plans]
+
+		# # Retrieve all the available recipes
+		available_recipes = Recipe.query.filter(Recipe.id.notin_(recent_recipe_ids)).all()
+
+		if not available_recipes:
+			current_app.logger.info(f'No new recipe is available')
+			raise AppException('No new recipes available to create a plan', 400)
+
+		# # Randomly select recipes for the day
+		selected_recipes = random.sample(available_recipes, min(3, len(available_recipes)))
+
+		# # Save the plan for the day
+		today = datetime.now()
+		for recipe in selected_recipes:
+			recipe_plan = RecipePlan(
+				user_id=user_id,
+				recipe_id=recipe.id, 
+				date=today
+			)
+			db.session.add(recipe_plan)
+		
+		db.session.commit()
+		current_app.logger.info(f'Created new recipe plan for user {user_id} successfully')
+		return {"message": "New daily recipe plan created", "recipes": [recipe.to_dict() for recipe in selected_recipes]}, 200
+					 

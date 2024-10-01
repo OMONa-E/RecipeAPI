@@ -2,6 +2,7 @@ from .extensions import db
 from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from .utils import safe_json_load, serializeJsonToString
+from datetime import datetime
 
 
 # ===================
@@ -24,7 +25,9 @@ class User(db.Model):
 	# # Relationship with recipes (one-to-many)
 	recipes = db.relationship('Recipe', backref='user', lazy='dynamic')
 	# # Relationship with pins (one-to-many)
-	pins = db.relationship('Pin', backref='user', lazy='dynamic') 	
+	pins = db.relationship('Pin', backref='user', lazy='dynamic')
+	# # Relationship with recipe plan (one-to-many)
+	recipe_plan = db.relationship('RecipePlan', backref='user', lazy='dynamic') 	
 
 	
 	def set_password(self, password) -> None: # # Converts the password from plain text to hash string
@@ -76,9 +79,10 @@ class Recipe(db.Model):
 	created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
 	created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 	updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-	# # Relationships with pin
+	# # Relationships with pin (one-to-many)
 	pins = db.relationship('Pin', backref='recipe', cascade="all, delete-orphan", lazy='dynamic')
-
+	# # Relationship with recipe plan (one-to-many)
+	recipe_plan = db.relationship('RecipePlan', backref='recipe', lazy='dynamic', cascade="all, delete-orphan")
 
 	def calculate_total_cost(self, ingredients): # # Setter method for ingredients
 		"""
@@ -170,7 +174,6 @@ class BlacklistToken(db.Model):
 class RecipePlan(db.Model):
 	__tablename__ = 'recipe_plans'
 	id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-	user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-	recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False)
-	data = db.Column(db.DateTime(timezone=True), default=func.now())
-	
+	user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+	recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
+	date = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
