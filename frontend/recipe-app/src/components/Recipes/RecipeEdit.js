@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 
 
 
-function RecipeCreate() {
+function RecipeEdit() {
+    const { recipe_id } = useParams(); // Get the recipe_id from URL
     // State variable to store input data 
     const [formData, setFormData] = useState(
         {
@@ -16,6 +17,29 @@ function RecipeCreate() {
     );
     const [error, setError] = useState(null); // Error handling
     const navigate = useNavigate(); // Redirect to another after submit
+
+    // Fetch the existing recipe data when component loads
+    useEffect(
+        () => {
+            const fetchRecipe = async() => {
+                try {
+                    const response = await api.get(`/recipes/${recipe_id}`);
+                    const recipe = response.data;
+                    setFormData( // prepopulate our form
+                        {
+                            name: recipe.name,
+                            ingredients: JSON.stringify(recipe.ingredients, null, 2),
+                            instructions: recipe.instructions,
+                            category: recipe.category
+                        }
+                    );
+                } catch (err) {
+                    setError('Failed to load recipe data.');
+                }
+            };
+            fetchRecipe();
+        }, [recipe_id]
+    );
 
     // Form submission handler
     const handleSubmit = async(e) => {
@@ -29,10 +53,10 @@ function RecipeCreate() {
                 ingredients: ingredientsJson // Send JSON object 
             };
 
-            await api.post('/recipes', payload); // Make POST request to create the recipe
-            navigate('/recipes'); // Redirect to recipe list page after successful creation - GET
+            await api.put(`/recipes/${recipe_id}`, payload); // Make PUT request to update the recipe
+            navigate(`/recipes/${recipe_id}`); // Redirect to recipe detail page after successful upadate - GET
         } catch (err) {
-            setError('Failed to create recipe. Ensure ingredients are in valid JSON format.');
+            setError('Failed to update recipe. Ensure ingredients are in valid JSON format.');
         }
     };
 
@@ -46,9 +70,13 @@ function RecipeCreate() {
         );
     };
 
+    if (error) {
+        return <p>{error}</p>
+    }
+
     return (
         <div>
-            <h2>Create Recipe</h2>
+            <h2>Edit Recipe</h2>
             {error && <p>{error}</p>} {/* Display error */}
             <form onSubmit={handleSubmit}>
                 <input type="text" name="name" placeholder="Recipe Name" value={formData.name} onChange={handleChange} required />
@@ -65,4 +93,4 @@ function RecipeCreate() {
 }
 
 
-export default RecipeCreate;
+export default RecipeEdit;

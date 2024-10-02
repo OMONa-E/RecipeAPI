@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import { Link } from 'react-router-dom';
 
 
 
@@ -27,7 +28,9 @@ function RecipeList() {
                 {
                     recipes.map(
                         (recipe) => (
-                            <li key={recipe.id}>{recipe.name}</li>
+                            <li key={recipe.id}>
+                                <Link to={`/recipes/${recipe.id}`}>{recipe.name}</Link> {/* Link to detail page */}                                
+                            </li>
                         )
                     )
                 }
