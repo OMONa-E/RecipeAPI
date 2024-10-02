@@ -168,7 +168,7 @@ class DeleteUser(Resource): # # Delete user resource
 		current_app.logger.info(f'User {user_id} attempting to delete {user.username}')
 
 		if user.id != user_id: # # Validate user
-			currentr_app.logger.info(f'User {user_id} has no ownership to this account')
+			current_app.logger.info(f'User {user_id} has no ownership to this account')
 			raise AppException('You dont have permission to delete this account', 403)
 
 		db.session.delete(user)

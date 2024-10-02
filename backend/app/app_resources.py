@@ -100,7 +100,7 @@ class RecipeUpdateById(Resource): # # Upadate a recipe by Id
 		# 	recipe.amount_to_serve = data['amount_to_serve']
 
 		db.session.commit() # # Save and flush the changes
-		current_app.logger.info(f'User {user-id} updated recipe {recipe.name} successfully')
+		current_app.logger.info(f'User {user_id} updated recipe {recipe.name} successfully')
 		return {'message': 'Recipe updated sucessfully', "recipe": recipe.to_dict()}, 200
 
 
@@ -132,7 +132,7 @@ class PinCreate(Resource): # # Create a pin
 		recipe = Recipe.query.get_or_404(recipe_id) # # Retrieve a recipe by Id - provide by the client otherwise throws 404 exception 
 		user_id = get_jwt_identity() # # Gets the current user JWTWEB Token
 
-		current_app.logger.info(f'User {user} attempting to pin recipe {recipe.name}')
+		current_app.logger.info(f'User {user_id} attempting to pin recipe {recipe.name}')
 
 		parser = reqparse.RequestParser() # # Intialize the parser
 		parser.add_argument('content', required=True, help='Content cannot be blank') # # Register/add argument to be parse
