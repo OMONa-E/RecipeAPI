@@ -26,7 +26,7 @@ api.add_resource(DeleteUserById, '/auth/users/<int:user_id>') # # DELETE remove 
 api.add_resource(RecipeGetAll, '/recipes') # # GET Recipe
 api.add_resource(RecipeCreate, '/recipes') # # POST Recipe
 api.add_resource(RecipeGetById, '/recipes/<int:recipe_id>') # # GET Recipe by Id 
-api.add_resource(RecipeDeleteById, 'recipes/<int:recipe_id>') # # DELETE Recipe by Id
+api.add_resource(RecipeDeleteById, '/recipes/<int:recipe_id>') # # DELETE Recipe by Id
 api.add_resource(RecipeUpdateById, '/recipes/<int:recipe_id>') # # UPDATE Reciep by Id
 
 # # Pin
