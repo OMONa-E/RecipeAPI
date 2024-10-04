@@ -8,6 +8,7 @@ from .models import Recipe, Pin, RecipePlan
 from .utils import recipe_parser, serializeJsonToString
 from .exceptions import AppException
 from .extensions import db
+from sqlalchemy import func
 
 
 
@@ -135,7 +136,7 @@ class PinCreate(Resource): # # Create a pin
 		current_app.logger.info(f'User {user_id} attempting to pin recipe {recipe.name}')
 
 		parser = reqparse.RequestParser() # # Intialize the parser
-		parser.add_argument('content', required=True, help='Content cannot be blank') # # Register/add argument to be parse
+		parser.add_argument('content', type=str, required=True, help='Content cannot be blank') # # Register/add argument to be parse
 		data = parser.parse_args() # # Parse the client data
 
 		if not data['content']:
@@ -145,11 +146,11 @@ class PinCreate(Resource): # # Create a pin
 		pin = Pin( # # Instantiate a pin object and its associated attributes
 			recipe_id=recipe_id,
 			user_id=user_id,
-			content=serializeJsonToString(data['content']) # # Serialize for cases of dict, tuple and list
+			content=data['content']
 		)
 		db.session.add(pin) # # Add the pin to the database session
 		db.session.commit() # # Save and flush the changes
-		current_app.logger(f'User {user_id} created pin for recipe {recipe.name} successfully')
+		current_app.logger.info(f'User {user_id} created pin for recipe {recipe.name} successfully')
 		return {'message': 'Pin/Comment added successfully', 'pin': pin.to_dict()}, 201
 
 
@@ -172,31 +173,46 @@ class GetRecipePlan(Resource):
 		current_app.logger.info(f'User {user_id} attempting to retrieve recipe plan')
 
 		# # Retrieve recipes user has had in the last 10days
-		ten_days_ago = datetime.utcnow() - timedelta(days=10)
+		ten_days_ago = datetime.now() - timedelta(days=5)
 		recent_recipe_plans = RecipePlan.query.filter(
 			RecipePlan.user_id == user_id,
 			RecipePlan.date >= ten_days_ago
 		).all()
 
-		current_app.logger.info(f'User {user_id} sucessfully got 10 daily recipe plan')
-
 		if not recent_recipe_plans: # # Validate recipe plan
-			current_app.logger.info('User {user_id} had no recipe plan before')
+			current_app.logger.info(f'User {user_id} had no recipe plan before')
 		else:
-			current_app.logger.info('User {user_id} already has recipe plan within the last 10 days')
+			current_app.logger.info(f'User {user_id} already has recipe plan within the last 5 days')
 
 		# # List of recipe ids from recipe plan
 		recent_recipe_ids = [plan.recipe_id for plan in recent_recipe_plans]
 
+		# # Retrive today's plan
+		today = datetime.now().date()
+		today_plan = RecipePlan.query.filter(
+					RecipePlan.user_id == user_id,
+					func.date(RecipePlan.date) == today
+				).all()
+		
+		if today_plan:
+			today_recipe_ids = [plan.recipe_id for plan in today_plan]
+			today_recipes = Recipe.query.filter(Recipe.id.in_(today_recipe_ids)).all()
+			current_app.logger.info(f"Today's recipe plan for {user_id}: {today_recipes}")
+			return {
+				"message": "Recipe plan for today already exists",
+				"recipes": [recipe.to_dict() for recipe in today_recipes]
+			}, 200
+
 		# # Retrieve all the available recipes
 		available_recipes = Recipe.query.filter(Recipe.id.notin_(recent_recipe_ids)).all()
-
+		
+		
 		if not available_recipes:
-			current_app.logger.info(f'No new recipe is available')
+			current_app.logger.info(f'No new recipe is available for user {user_id}')
 			raise AppException('No new recipes available to create a plan', 400)
 
 		# # Randomly select recipes for the day
-		selected_recipes = random.sample(available_recipes, min(3, len(available_recipes)))
+		selected_recipes = random.sample(available_recipes, min(2, len(available_recipes)))
 
 		# # Save the plan for the day
 		today = datetime.now()

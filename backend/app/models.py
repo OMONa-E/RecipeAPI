@@ -134,7 +134,7 @@ class Pin(db.Model):
 	id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 	recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
 	user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-	content = db.Column(db.Text, nullable=False)
+	content = db.Column(db.String(4000), nullable=False)
 	created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 	updated_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -144,7 +144,7 @@ class Pin(db.Model):
             "id": self.id,
             "recipe_id": self.recipe_id,
             "user_id": self.user_id,
-            "content": serializeJsonToString(self.content),
+            "content": self.content,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
 			"updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -176,4 +176,4 @@ class RecipePlan(db.Model):
 	id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 	user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 	recipe_id = db.Column(db.Integer, db.ForeignKey('recipes.id'), nullable=False)
-	date = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
+	date = db.Column(db.DateTime, default=datetime.now(), nullable=False)

@@ -18,6 +18,18 @@ def user_parser():
     parser.add_argument('aveg_intake_person', type=int, help='Average intake per person must be an integer')
     return parser
 
+def user_update_parser():
+    parser = reqparse.RequestParser()
+    parser.add_argument('username', type=str, help='Username must be a string and cannot be blank')
+    parser.add_argument('password', type=str, help='Password must be a string and cannot be blank')
+    parser.add_argument('role', type=str, help='Role must be a string')
+    parser.add_argument('allergies', type=str, action='append', help='Allergies must be a string')
+    parser.add_argument('dislikes', type=str, action='append', help='Dislikes must be a string')
+    parser.add_argument('hard_to_get', type=str, action='append', help='Hard to get must be a string')
+    parser.add_argument('family_size', type=int, help='Family size must be an integer')
+    parser.add_argument('aveg_intake_person', type=int, help='Average intake per person must be an integer')
+    return parser
+
 # Function for recipe-related arguments
 def recipe_parser():
     parser = reqparse.RequestParser()

@@ -2,7 +2,7 @@ from functools import wraps
 from flask import current_app
 from flask_restful import Resource
 from flask_jwt_extended import get_jwt, create_access_token, jwt_required, get_jwt_identity
-from .utils import user_parser, serializeJsonToString
+from .utils import user_parser, user_update_parser, serializeJsonToString
 from .exceptions import AppException
 from .models import User, BlacklistToken
 from .extensions import db
@@ -102,34 +102,38 @@ class Login(Resource): # # Login resource
 class UpdateUserProfile(Resource): # # User update resource
 	@jwt_required() # # Annotates the method to authorized and authenticated clients
 	def put(self):
-		parser = user_parser() # # Parses client arguments
+		parser = user_update_parser() # # Parses client arguments
 		data = parser.parse_args()
 		user_id = get_jwt_identity() # # Gets the present user JSON token
 		user = User.query.get_or_404(user_id) # # Retrieve user by the JSON Token and throws exception if not
 
-		current_app.logger.info(f'User {user_id} attempting to update user profile')
+		current_app.logger.info(f'User {user_id} attempting to update user {user.id} profile')
 
 		if user.id != user_id: # # Validate user id
 			current_app.logger.info(f'User {user_id} is not the profile owner')
 			raise AppException('You do not have permission to update this this user', 403)
+		
+		current_app.logger.info(f'Validating arguments parameters {data}')
 
 		# # Validate the client provided data/arguments 
-		if 'username' in data:
+		if 'username' in data and data['username'] is not None:
 			user.username = data['username']
-		if 'password' in data:
-			user.password = data['password']
-		if 'role' in data:
+		if 'password' in data and data['password'] is not None:
+			user.set_password(data['password'])
+		if 'role' in data and data['role'] is not None:
 			user.role = data['role']
-		if 'allergies' in data:
+		if 'allergies' in data and data['allergies'] is not None:
 			user.allergies = serializeJsonToString(data['allergies'])
-		if 'dislikes' in data:
+		if 'dislikes' in data and data['dislikes'] is not None:
 			user.dislikes = serializeJsonToString(data['dislikes'])
-		if 'hard_to_get' in data:
+		if 'hard_to_get' in data and data['hard_to_get'] is not None:
 			user.hard_to_get = serializeJsonToString(data['hard_to_get'])
-		if 'family_size' in data:
+		if 'family_size' in data and data['family_size'] is not None:
 			user.family_size = data['family_size']
-		if 'aveg_intake_person' in data:
+		if 'aveg_intake_person' in data and data['aveg_intake_person'] is not None:
 			user.aveg_intake_person = data['aveg_intake_person']
+
+		current_app.logger.info(f'Successfully validated params')
 
 		db.session.commit() # # Save and flush the passed validation data
 		current_app.logger.info(f'User {user_id} upadted the profile successfully')
